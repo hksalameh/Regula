@@ -32,7 +32,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         database.mealDao()
     )
 
-    // Theme Mode: Default to LIGHT as explicitly requested by user ("اللون الطبيعي")
     private val _themeMode = MutableStateFlow(
         when (prefs.getString("theme_mode", "LIGHT")) {
             "DARK" -> ThemeMode.DARK
@@ -42,11 +41,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
 
-    // Language preference: "AR" or "EN"
     private val _appLanguage = MutableStateFlow(prefs.getString("app_language", "AR") ?: "AR")
     val appLanguage: StateFlow<String> = _appLanguage.asStateFlow()
 
-    // Color Palette Theme - default to NATURAL_TONES
     private val _colorPalette = MutableStateFlow(
         when (prefs.getString("color_palette", "NATURAL_TONES")) {
             "ROYAL_NAVY" -> AppColorPalette.ROYAL_NAVY
@@ -58,11 +55,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val colorPalette: StateFlow<AppColorPalette> = _colorPalette.asStateFlow()
 
-    // App display name preference
     private val _appNameAlias = MutableStateFlow(prefs.getString("app_name_alias", "ريغولا") ?: "ريغولا")
     val appNameAlias: StateFlow<String> = _appNameAlias.asStateFlow()
 
-    // Daily water goal in ml (default 2000 ml)
     private val _waterGoalMl = MutableStateFlow(prefs.getInt("water_goal_ml", 2000))
     val waterGoalMl: StateFlow<Int> = _waterGoalMl.asStateFlow()
 
@@ -81,28 +76,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val lastSuccessfulBowel: StateFlow<BowelEntry?> = repository.lastSuccessfulBowel
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    // Current report filter (7, 14, 30, or 0 for All)
     private val _reportFilterDays = MutableStateFlow(7)
     val reportFilterDays: StateFlow<Int> = _reportFilterDays.asStateFlow()
 
-    // Active bottom navigation destination: 0 = Today, 1 = Timeline, 2 = Doctor Report, 3 = Bristol Guide, 4 = Settings
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
 
-    // Sheet states
     private val _activeSheet = MutableStateFlow<SheetType?>(null)
     val activeSheet: StateFlow<SheetType?> = _activeSheet.asStateFlow()
-
-    init {
-        // Automatically check if database is empty on first launch and populate demo data
-        viewModelScope.launch {
-            repository.allBowelEntries.collect { list ->
-                if (list.isEmpty()) {
-                    repository.seedSampleDataIfEmpty()
-                }
-            }
-        }
-    }
 
     fun setThemeMode(mode: ThemeMode) {
         _themeMode.value = mode
@@ -158,9 +139,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteBowelEntry(id: Long) {
-        viewModelScope.launch {
-            repository.deleteBowelById(id)
-        }
+        viewModelScope.launch { repository.deleteBowelById(id) }
     }
 
     fun addMedication(entry: MedicationEntry) {
@@ -171,9 +150,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteMedication(id: Long) {
-        viewModelScope.launch {
-            repository.deleteMedicationById(id)
-        }
+        viewModelScope.launch { repository.deleteMedicationById(id) }
     }
 
     fun addMeal(entry: MealEntry) {
@@ -184,19 +161,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteMeal(id: Long) {
-        viewModelScope.launch {
-            repository.deleteMealById(id)
-        }
+        viewModelScope.launch { repository.deleteMealById(id) }
     }
 
     fun quickAddWater(ml: Int = 250) {
         viewModelScope.launch {
-            val now = System.currentTimeMillis()
             repository.insertMeal(
                 MealEntry(
-                    timestamp = now,
+                    timestamp = System.currentTimeMillis(),
                     mealType = "سوائل وماء",
-                    foodsDescription = "شرب ماء وسوائل لترطيب الأمعاء",
+                    foodsDescription = "شرب ماء وسوائل",
                     fiberLevel = "غير محدد",
                     waterMl = ml,
                     triggersSuspected = "",
@@ -206,9 +180,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Demo data is now opt-in only from Settings. It is never restored automatically. */
     fun reseedDemoData() {
         viewModelScope.launch {
-            // Delete all and re-seed
             val bowels = bowelEntries.value
             val meds = medicationEntries.value
             val meals = mealEntries.value
@@ -235,7 +209,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val filteredBowels = bowelEntries.value.filter { it.timestamp >= cutoff }
         val filteredMeds = medicationEntries.value.filter { it.timestamp >= cutoff }
         val filteredMeals = mealEntries.value.filter { it.timestamp >= cutoff }
-
         return repository.buildDoctorReport(filteredBowels, filteredMeds, filteredMeals, days)
     }
 }
