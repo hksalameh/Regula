@@ -7,115 +7,77 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+private data class PaletteRoles(
+    val primary: Color, val onPrimary: Color,
+    val container: Color, val onContainer: Color,
+    val secondary: Color, val onSecondary: Color,
+    val secondaryContainer: Color, val onSecondaryContainer: Color
+)
+
 fun getLightColorScheme(palette: AppColorPalette): ColorScheme {
-    return when (palette) {
-        AppColorPalette.NATURAL_TONES -> lightColorScheme(
-            primary = NaturalPrimary,
-            onPrimary = NaturalOnPrimary,
-            primaryContainer = NaturalPrimaryContainer,
-            onPrimaryContainer = NaturalOnPrimaryContainer,
-            secondary = NaturalSecondary,
-            onSecondary = NaturalOnSecondary,
-            secondaryContainer = NaturalSecondaryContainer,
-            onSecondaryContainer = NaturalOnSecondaryContainer,
-            tertiary = NaturalBadge,
-            background = NaturalBackground,
-            onBackground = NaturalOnBackground,
-            surface = NaturalSurface,
-            onSurface = NaturalOnSurface,
-            surfaceVariant = NaturalSurfaceVariant,
-            onSurfaceVariant = NaturalOnSurfaceVariant,
-            outline = NaturalOutline
-        )
-        AppColorPalette.ROYAL_NAVY -> lightColorScheme(
-            primary = RoyalPrimary,
-            onPrimary = RoyalOnPrimary,
-            primaryContainer = RoyalPrimaryContainer,
-            onPrimaryContainer = RoyalOnPrimaryContainer,
-            secondary = RoyalSecondary,
-            onSecondary = RoyalOnSecondary,
-            secondaryContainer = RoyalSecondaryContainer,
-            onSecondaryContainer = RoyalOnSecondaryContainer,
-            tertiary = Color(0xFF0369A1),
-            background = LightCleanBackground,
-            onBackground = DeepDarkText,
-            surface = SoftPorcelainSurface,
-            onSurface = DeepDarkText,
-            surfaceVariant = Color(0xFFE2E8F0),
-            onSurfaceVariant = MutedSlateText,
-            outline = LightSubtleBorder
-        )
-        AppColorPalette.OCEANIC_TEAL -> lightColorScheme(
-            primary = OceanPrimary,
-            onPrimary = OceanOnPrimary,
-            primaryContainer = OceanPrimaryContainer,
-            onPrimaryContainer = OceanOnPrimaryContainer,
-            secondary = OceanSecondary,
-            onSecondary = OceanOnSecondary,
-            secondaryContainer = OceanSecondaryContainer,
-            onSecondaryContainer = OceanOnSecondaryContainer,
-            tertiary = Color(0xFF0F766E),
-            background = LightCleanBackground,
-            onBackground = DeepDarkText,
-            surface = SoftPorcelainSurface,
-            onSurface = DeepDarkText,
-            surfaceVariant = Color(0xFFE2E8F0),
-            onSurfaceVariant = MutedSlateText,
-            outline = LightSubtleBorder
-        )
-        AppColorPalette.SAPPHIRE_GOLD -> lightColorScheme(
-            primary = SapphirePrimary,
-            onPrimary = SapphireOnPrimary,
-            primaryContainer = SapphirePrimaryContainer,
-            onPrimaryContainer = SapphireOnPrimaryContainer,
-            secondary = SapphireSecondary,
-            onSecondary = SapphireOnSecondary,
-            secondaryContainer = SapphireSecondaryContainer,
-            onSecondaryContainer = SapphireOnSecondaryContainer,
-            tertiary = Color(0xFFB45309),
-            background = LightCleanBackground,
-            onBackground = DeepDarkText,
-            surface = SoftPorcelainSurface,
-            onSurface = DeepDarkText,
-            surfaceVariant = Color(0xFFE2E8F0),
-            onSurfaceVariant = MutedSlateText,
-            outline = LightSubtleBorder
-        )
-        AppColorPalette.CLASSIC_INDIGO -> lightColorScheme(
-            primary = IndigoPrimary,
-            onPrimary = IndigoOnPrimary,
-            primaryContainer = IndigoPrimaryContainer,
-            onPrimaryContainer = IndigoOnPrimaryContainer,
-            secondary = IndigoSecondary,
-            onSecondary = IndigoOnSecondary,
-            secondaryContainer = IndigoSecondaryContainer,
-            onSecondaryContainer = IndigoOnSecondaryContainer,
-            tertiary = Color(0xFF0284C7),
-            background = Color(0xFF0F172A),
-            onBackground = Color(0xFFF8FAFC),
-            surface = Color(0xFF1E293B),
-            onSurface = Color(0xFFF8FAFC),
-            surfaceVariant = Color(0xFF334155),
-            onSurfaceVariant = Color(0xFFCBD5E1),
-            outline = Color(0xFF475569)
-        )
+    val (primary, onPrimary, container, onContainer, secondary, onSecondary, secondaryContainer, onSecondaryContainer) = when (palette) {
+        AppColorPalette.NATURAL_TONES -> PaletteRoles(NaturalPrimary, NaturalOnPrimary, NaturalPrimaryContainer, NaturalOnPrimaryContainer, NaturalSecondary, NaturalOnSecondary, NaturalSecondaryContainer, NaturalOnSecondaryContainer)
+        AppColorPalette.ROYAL_NAVY -> PaletteRoles(RoyalPrimary, RoyalOnPrimary, RoyalPrimaryContainer, RoyalOnPrimaryContainer, RoyalSecondary, RoyalOnSecondary, RoyalSecondaryContainer, RoyalOnSecondaryContainer)
+        AppColorPalette.OCEANIC_TEAL -> PaletteRoles(OceanPrimary, OceanOnPrimary, OceanPrimaryContainer, OceanOnPrimaryContainer, OceanSecondary, OceanOnSecondary, OceanSecondaryContainer, OceanOnSecondaryContainer)
+        AppColorPalette.SAPPHIRE_GOLD -> PaletteRoles(SapphirePrimary, SapphireOnPrimary, SapphirePrimaryContainer, SapphireOnPrimaryContainer, SapphireSecondary, SapphireOnSecondary, SapphireSecondaryContainer, SapphireOnSecondaryContainer)
+        AppColorPalette.CLASSIC_INDIGO -> PaletteRoles(IndigoPrimary, IndigoOnPrimary, IndigoPrimaryContainer, IndigoOnPrimaryContainer, IndigoSecondary, IndigoOnSecondary, IndigoSecondaryContainer, IndigoOnSecondaryContainer)
     }
+    return lightColorScheme(
+        primary = primary, onPrimary = onPrimary,
+        primaryContainer = container, onPrimaryContainer = onContainer,
+        secondary = secondary, onSecondary = onSecondary,
+        secondaryContainer = secondaryContainer, onSecondaryContainer = onSecondaryContainer,
+        tertiary = secondary, onTertiary = onSecondary,
+        tertiaryContainer = secondaryContainer, onTertiaryContainer = onSecondaryContainer,
+        background = NaturalBackground, onBackground = NaturalOnBackground,
+        surface = NaturalSurface, onSurface = NaturalOnSurface,
+        surfaceVariant = NaturalSurfaceVariant, onSurfaceVariant = NaturalOnSurfaceVariant,
+        outline = NaturalOutline, outlineVariant = NaturalOutline,
+        surfaceContainerLowest = Color.White,
+        surfaceContainerLow = NaturalBackground,
+        surfaceContainer = NaturalSurfaceVariant,
+        surfaceContainerHigh = NaturalPrimaryContainer,
+        surfaceContainerHighest = NaturalPrimaryContainer,
+        surfaceBright = Color.White, surfaceDim = Color(0xFFE7EBE6),
+        inverseSurface = NaturalOnSurface, inverseOnSurface = Color.White,
+        inversePrimary = Color(0xFFB8D5C8),
+        error = Color(0xFFB32635), onError = Color.White,
+        errorContainer = Color(0xFFF9E3E4), onErrorContainer = Color(0xFF84202B)
+    )
 }
 
 fun getDarkColorScheme(palette: AppColorPalette): ColorScheme {
-    val (primary, sec) = when (palette) {
-        AppColorPalette.NATURAL_TONES -> Pair(Color(0xFFB2CBA0), Color(0xFFD1DBC1))
-        AppColorPalette.ROYAL_NAVY -> Pair(Color(0xFF60A5FA), Color(0xFF38BDF8))
-        AppColorPalette.OCEANIC_TEAL -> Pair(Color(0xFF60A5FA), Color(0xFF2DD4BF))
-        AppColorPalette.SAPPHIRE_GOLD -> Pair(Color(0xFF93C5FD), Color(0xFFFBBF24))
-        AppColorPalette.CLASSIC_INDIGO -> Pair(Color(0xFF818CF8), Color(0xFFA5B4FC))
+    val (primary, secondary) = when (palette) {
+        AppColorPalette.NATURAL_TONES -> Color(0xFFB8D5C8) to Color(0xFFA8C9BC)
+        AppColorPalette.ROYAL_NAVY -> Color(0xFFB5CBF3) to Color(0xFFA5C8ED)
+        AppColorPalette.OCEANIC_TEAL -> Color(0xFFA5D4E6) to Color(0xFF9BD6D0)
+        AppColorPalette.SAPPHIRE_GOLD -> Color(0xFFB9C9F1) to Color(0xFFE2C998)
+        AppColorPalette.CLASSIC_INDIGO -> Color(0xFFB7C8E5) to Color(0xFFA8C9E5)
     }
+    val darkText = Color(0xFF10201B)
+    val lightText = Color(0xFFE4EDE7)
+    val container = Color(0xFF28453B)
     return darkColorScheme(
-        primary = primary,
-        secondary = sec,
-        background = DarkBackground,
-        surface = DarkSurface,
-        surfaceVariant = DarkSurfaceVariant
+        primary = primary, onPrimary = darkText,
+        primaryContainer = container, onPrimaryContainer = lightText,
+        secondary = secondary, onSecondary = darkText,
+        secondaryContainer = Color(0xFF30483F), onSecondaryContainer = lightText,
+        tertiary = secondary, onTertiary = darkText,
+        tertiaryContainer = container, onTertiaryContainer = lightText,
+        background = DarkBackground, onBackground = lightText,
+        surface = DarkSurface, onSurface = lightText,
+        surfaceVariant = DarkSurfaceVariant, onSurfaceVariant = Color(0xFFC0D0C6),
+        outline = Color(0xFF71887A), outlineVariant = Color(0xFF3A5045),
+        surfaceContainerLowest = Color(0xFF0C1613),
+        surfaceContainerLow = Color(0xFF14221D),
+        surfaceContainer = DarkSurface,
+        surfaceContainerHigh = DarkSurfaceVariant,
+        surfaceContainerHighest = Color(0xFF30453B),
+        surfaceBright = Color(0xFF34483E), surfaceDim = DarkBackground,
+        inverseSurface = lightText, inverseOnSurface = darkText,
+        inversePrimary = Color(0xFF294F46),
+        error = Color(0xFFFFB4AB), onError = Color(0xFF690005),
+        errorContainer = Color(0xFF84202B), onErrorContainer = Color(0xFFFFDAD6)
     )
 }
 
@@ -125,10 +87,8 @@ fun MyApplicationTheme(
     palette: AppColorPalette = AppColorPalette.NATURAL_TONES,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) getDarkColorScheme(palette) else getLightColorScheme(palette)
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (darkTheme) getDarkColorScheme(palette) else getLightColorScheme(palette),
         typography = Typography,
         content = content
     )
