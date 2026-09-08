@@ -50,7 +50,7 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
-    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
