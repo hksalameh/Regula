@@ -14,12 +14,12 @@ val releaseSigningAvailable = listOf(releaseKeystore, releaseStorePassword, rele
 
 android {
     namespace = "com.aistudio.boweltrack.cdkx"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.aistudio.boweltrack.cdkx"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 2
         versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
