@@ -1,0 +1,26 @@
+name: Source Snapshot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ improve/ui-release-readiness ]
+    paths:
+      - '.github/workflows/source-snapshot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive tracked source only
+        run: git archive --format=zip HEAD -o regula-source.zip
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: regula-source
+          path: regula-source.zip
+          if-no-files-found: error
+          retention-days: 7
