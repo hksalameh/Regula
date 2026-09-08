@@ -1,8 +1,7 @@
 package com.example.ui.screens
 
-import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,35 +14,31 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ColorLens
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Spa
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,13 +48,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.ui.ThemeMode
 import com.example.ui.theme.AppColorPalette
 
@@ -76,705 +67,193 @@ fun SettingsScreen(
     onLanguageChange: (String) -> Unit,
     onWaterGoalChange: (Int) -> Unit,
     onReseedDemoData: () -> Unit,
-    onClearAllData: () -> Unit
+    onClearAllData: () -> Unit,
+    hasRecords: Boolean = false,
+    onNavigateToBristol: () -> Unit = {},
+    onExportData: (() -> Unit)? = null,
+    onImportData: (() -> Unit)? = null
 ) {
-    val context = LocalContext.current
-    var showClearDialog by remember { mutableStateOf(false) }
-    var showReseedDialog by remember { mutableStateOf(false) }
-    var showColorPalettePreview by remember { mutableStateOf(false) }
     val isAr = appLanguage == "AR"
+    val t: (String, String) -> String = { ar, en -> if (isAr) ar else en }
+    var showClearDialog by remember { mutableStateOf(false) }
+    var showDemoDialog by remember { mutableStateOf(false) }
+    var showPaletteMenu by remember { mutableStateOf(false) }
+    var showPalettePreview by remember { mutableStateOf(false) }
+    var alias by remember(appNameAlias) { mutableStateOf(appNameAlias) }
 
-    if (showColorPalettePreview) {
+    if (showPalettePreview) {
         ColorPalettePreviewScreen(
             currentPalette = currentColorPalette,
             appLanguage = appLanguage,
-            onSelectAndApply = { newPalette ->
-                onColorPaletteChange(newPalette)
-                showColorPalettePreview = false
-            },
-            onBack = { showColorPalettePreview = false }
+            onSelectAndApply = { onColorPaletteChange(it); showPalettePreview = false },
+            onBack = { showPalettePreview = false }
         )
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp, vertical = 14.dp)
-    ) {
-        // Screen Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                modifier = Modifier.size(44.dp)
-            ) {
-                Icon(
-                    Icons.Default.Settings,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(10.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column {
-                Text(
-                    text = if (isAr) "الإعدادات والتخصيص" else "Settings & Appearance",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = if (isAr) "تخصيص الألوان، اللغة، والخيارات اليومية" else "Customize colors, language & daily targets",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-        }
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
+        Column(Modifier.fillMaxWidth().widthIn(max = 600.dp).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 20.dp)) {
+            Text(t("الإعدادات", "Settings"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Text(t("اضبط التطبيق بالطريقة التي تناسبك.", "Make the tracker work for you."), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(22.dp))
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // --- SECTION 1: LANGUAGE SWITCHER (العربية / English) ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Language,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isAr) "لغة التطبيق (Language)" else "App Language (اللغة)",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+            SettingsCard(t("المظهر واللغة", "Appearance & language")) {
+                Text(t("لغة التطبيق", "App language"), style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = isAr, onClick = { onLanguageChange("AR") }, label = { Text("العربية") })
+                    FilterChip(selected = !isAr, onClick = { onLanguageChange("EN") }, label = { Text("English") })
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (isAr) "التبديل الفوري بين اللغة العربية والإنجليزية" else "Switch instantly between Arabic and English",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (appLanguage == "AR") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = if (appLanguage == "AR") 1.5.dp else 0.5.dp,
-                            color = if (appLanguage == "AR") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable {
-                                onLanguageChange("AR")
-                                Toast.makeText(context, "تم تفعيل اللغة العربية", Toast.LENGTH_SHORT).show()
-                            }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 12.dp, horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🇸🇦 العربية (Arabic)",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.5.sp,
-                                color = if (appLanguage == "AR") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (appLanguage == "EN") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = if (appLanguage == "EN") 1.5.dp else 0.5.dp,
-                            color = if (appLanguage == "EN") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable {
-                                onLanguageChange("EN")
-                                Toast.makeText(context, "English language activated", Toast.LENGTH_SHORT).show()
-                            }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 12.dp, horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🇬🇧 English",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.5.sp,
-                                color = if (appLanguage == "EN") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- SECTION 2: COLOR STUDIO (LIVE PREVIEW & JUDGEMENT) ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.ColorLens,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isAr) "استوديو الألوان (الأزرق والأبيض الناصع)" else "Color Studio (Blue & Crisp White)",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (isAr) "اختر الدرجة التي ترتاح لها، وشاهد التطبيق يتحول فوراً لتجربته بنفسك:" else "Select your preferred palette and see the entire app update live:",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // LIVE PREVIEW CARD (Demonstrates the palette in action)
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                    shadowElevation = 2.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Default.Visibility,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (isAr) "معاينة حية للدرجات المختارة الآن" else "Live Preview of Active Palette",
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer
-                            ) {
-                                Text(
-                                    text = if (isAr) "تناغم لوني" else "Harmonious",
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Sample App Banner inside preview
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Spa,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.padding(8.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = if (isAr) "ريغولا • Regula" else "Regula • ريغولا",
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 14.5.sp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = if (isAr) "أزرق واضح غير باهت + أبيض ناصع + أزرق كحلي داكن طفيف" else "Rich blue + pure white + subtle dark navy",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Dedicated Preview Screen Button
-                        Button(
-                            onClick = { showColorPalettePreview = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("btn_open_dedicated_palette_preview"),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                        ) {
-                            Icon(
-                                Icons.Default.Palette,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(17.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isAr) "فتح شاشة المعاينة الكاملة للوحة الألوان (Preview)" else "Open Full Color Palette Preview",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.5.sp,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // PALETTE CHOICES
-                AppColorPalette.entries.forEach { palette ->
-                    val isSelected = currentColorPalette == palette
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = if (isSelected) 1.8.dp else 0.6.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clickable {
-                                onColorPaletteChange(palette)
-                                Toast.makeText(context, if (isAr) "تم تطبيق: ${palette.titleAr}" else "Applied: ${palette.titleEn}", Toast.LENGTH_SHORT).show()
-                            }
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Circular Color Previews
-                            Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
-                                palette.previewColors.forEach { color ->
-                                    Box(
-                                        modifier = Modifier
-                                            .size(24.dp)
-                                            .clip(CircleShape)
-                                            .background(color)
-                                            .border(1.5.dp, Color.White, CircleShape)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(14.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = if (isAr) palette.titleAr else palette.titleEn,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.5.sp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = if (isAr) palette.subtitleAr else palette.subtitleEn,
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
-                            }
-
-                            RadioButton(
-                                selected = isSelected,
-                                onClick = {
-                                    onColorPaletteChange(palette)
-                                    Toast.makeText(context, if (isAr) "تم تطبيق: ${palette.titleAr}" else "Applied: ${palette.titleEn}", Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- SECTION 3: APP NAME & IDENTITY ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Spa,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isAr) "هوية التطبيق الرسمية" else "App Identity",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (isAr) "الاسم المعتمد: ريغولا (Regula) - لانتظام الإخراج والتخلص من الإمساك" else "Official Name: Regula - Bowel Regularity & Constipation Relief",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.padding(8.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = if (isAr) "ريغولا | Regula" else "Regula | ريغولا",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = if (isAr) "اسم لاتيني وعربي عالمي يرمز للانتظام والراحة وسرعة العبور" else "Latin & Arabic name symbolizing regularity, ease & relief",
-                                fontSize = 11.5.sp,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- SECTION 4: DISPLAY MODE (LIGHT / DARK) ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Palette,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isAr) "وضع العرض (طبيعي فاتح / ليلي)" else "Display Mode (Light / Dark)",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ThemeOptionRow(
-                    title = if (isAr) "الوضع الطبيعي الفاتح" else "Natural Light Mode",
-                    description = if (isAr) "خلفية بيضاء ناصعة ومريحة جداً للقراءة بالنهار" else "Crisp white background, easy on the eyes during daylight",
-                    icon = Icons.Default.LightMode,
-                    isSelected = currentThemeMode == ThemeMode.LIGHT,
-                    onClick = { onThemeModeChange(ThemeMode.LIGHT) }
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                ThemeOptionRow(
-                    title = if (isAr) "الوضع الليلي الداكن" else "Dark Night Mode",
-                    description = if (isAr) "ألوان كحلية هادئة ومريحة للعين في الظلام" else "Deep navy soothing colors for low-light comfort",
-                    icon = Icons.Default.DarkMode,
-                    isSelected = currentThemeMode == ThemeMode.DARK,
-                    onClick = { onThemeModeChange(ThemeMode.DARK) }
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                ThemeOptionRow(
-                    title = if (isAr) "تلقائي حسب إعدادات الجهاز" else "System Default",
-                    description = if (isAr) "يتبع إعدادات هاتفك الذكي تلقائياً" else "Follows system theme automatically",
-                    icon = Icons.Default.BrightnessAuto,
-                    isSelected = currentThemeMode == ThemeMode.SYSTEM,
-                    onClick = { onThemeModeChange(ThemeMode.SYSTEM) }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- SECTION 5: HYDRATION GOAL ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.WaterDrop,
-                        contentDescription = null,
-                        tint = Color(0xFF0284C7),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isAr) "الهدف اليومي للسوائل" else "Daily Hydration Target",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (isAr) "ترطيب الأمعاء المنتظم هو العامل الأساسي في سلاسة التبرز ومنع الإمساك" else "Regular hydration is key for bowel regularity and preventing constipation",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    listOf(1500, 2000, 2500, 3000).forEach { goal ->
+                Spacer(Modifier.height(12.dp))
+                Text(t("وضع العرض", "Display mode"), style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(ThemeMode.LIGHT, ThemeMode.DARK, ThemeMode.SYSTEM).forEach { mode ->
                         FilterChip(
-                            selected = waterGoalMl == goal,
-                            onClick = { onWaterGoalChange(goal) },
-                            label = { Text(if (isAr) "$goal مل" else "$goal ml", fontSize = 12.sp) },
+                            selected = currentThemeMode == mode,
+                            onClick = { onThemeModeChange(mode) },
+                            label = { Text(when (mode) {
+                                ThemeMode.LIGHT -> t("فاتح", "Light")
+                                ThemeMode.DARK -> t("داكن", "Dark")
+                                ThemeMode.SYSTEM -> t("تلقائي", "System")
+                            }) },
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // --- SECTION 6: DATA MANAGEMENT ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = if (isAr) "إدارة البيانات والخصوصية" else "Data Management & Privacy",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = if (isAr) "بياناتك مخزنة محلياً بالكامل على هاتفك دون مشاركتها لضمان خصوصيتك." else "All records are stored 100% locally on your device for absolute privacy.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                OutlinedButton(
-                    onClick = { showReseedDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (isAr) "إعادة تحميل بيانات تجريبية استرشادية" else "Reload Sample Clinical Data")
+                Spacer(Modifier.height(12.dp))
+                Text(t("لوحة الألوان", "Color palette"), style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(8.dp))
+                Box {
+                    OutlinedButton(onClick = { showPaletteMenu = true }, modifier = Modifier.fillMaxWidth()) {
+                        Box(Modifier.size(18.dp).background(currentColor(currentColorPalette), CircleShape))
+                        Spacer(Modifier.width(10.dp))
+                        Text(if (isAr) currentColorPalette.titleAr else currentColorPalette.titleEn)
+                    }
+                    DropdownMenu(expanded = showPaletteMenu, onDismissRequest = { showPaletteMenu = false }) {
+                        AppColorPalette.entries.forEach { palette ->
+                            DropdownMenuItem(
+                                text = { Text(if (isAr) palette.titleAr else palette.titleEn) },
+                                leadingIcon = { Box(Modifier.size(18.dp).background(currentColor(palette), CircleShape)) },
+                                trailingIcon = { if (currentColorPalette == palette) Icon(Icons.Default.Check, contentDescription = null) },
+                                onClick = { onColorPaletteChange(palette); showPaletteMenu = false }
+                            )
+                        }
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedButton(
-                    onClick = { showClearDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Icon(Icons.Default.DeleteForever, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (isAr) "مسح جميع البيانات المسجلة" else "Clear All Recorded Data")
+                TextButton(onClick = { showPalettePreview = true }, modifier = Modifier.align(Alignment.End)) {
+                    Text(t("معاينة الألوان", "Preview palettes"))
                 }
             }
-        }
+            Spacer(Modifier.height(14.dp))
 
-        Spacer(modifier = Modifier.height(30.dp))
+            SettingsCard(t("الاسم والهدف اليومي", "Name & daily goal")) {
+                OutlinedTextField(
+                    value = alias,
+                    onValueChange = { alias = it.take(40) },
+                    label = { Text(t("اسم التطبيق", "App name")) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (alias != appNameAlias && alias.isNotBlank()) {
+                    TextButton(onClick = { onAppNameAliasChange(alias.trim()) }, modifier = Modifier.align(Alignment.End)) {
+                        Text(t("حفظ الاسم", "Save name"))
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(t("هدف الماء والسوائل", "Fluid tracking goal"), style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(4.dp))
+                Text(t("اختر هدفًا شخصيًا يناسب إرشادات طبيبك. ليس كل شخص بحاجة إلى الكمية نفسها.", "Choose a personal goal appropriate for your clinician's advice. Fluid needs vary."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(12.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { onWaterGoalChange(waterGoalMl - 250) }, enabled = waterGoalMl > 250) {
+                        Icon(Icons.Default.Remove, contentDescription = t("تقليل الهدف", "Decrease goal"))
+                    }
+                    Text("$waterGoalMl ${t("مل", "ml")}", modifier = Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    IconButton(onClick = { onWaterGoalChange(waterGoalMl + 250) }, enabled = waterGoalMl < 10000) {
+                        Icon(Icons.Default.Add, contentDescription = t("زيادة الهدف", "Increase goal"))
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+
+            SettingsCard(t("الدليل", "Reference")) {
+                OutlinedButton(onClick = onNavigateToBristol, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(t("دليل مقياس بريستول", "Bristol stool chart"))
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+
+            SettingsCard(t("البيانات والخصوصية", "Data & privacy")) {
+                Text(t("السجلات محفوظة على هذا الجهاز. قد يؤدي حذف التطبيق أو فقدان الهاتف إلى فقدانها. احفظ نسخة في مكان آمن إذا احتجت إليها.", "Records are stored on this device. Uninstalling the app or losing the phone may erase them. Keep a secure copy if needed."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (onExportData != null) {
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedButton(onClick = onExportData, modifier = Modifier.fillMaxWidth().testTag("export_data_button")) {
+                        Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(t("تصدير نسخة من السجلات", "Export records"))
+                    }
+                }
+                if (onImportData != null) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(onClick = onImportData, modifier = Modifier.fillMaxWidth().testTag("import_data_button")) {
+                        Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(t("استيراد نسخة احتياطية", "Import backup"))
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(onClick = { showDemoDialog = true }, enabled = !hasRecords, modifier = Modifier.fillMaxWidth()) {
+                    Text(t("إضافة بيانات تجريبية", "Add sample data"))
+                }
+                if (hasRecords) {
+                    Text(t("البيانات التجريبية متاحة فقط عندما تكون جميع السجلات فارغة. لن تُستبدل بياناتك الحالية.", "Sample data is available only when all records are empty. Existing records are never replaced."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick = { showClearDialog = true }, modifier = Modifier.fillMaxWidth().testTag("clear_data_button")) {
+                    Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(t("مسح جميع السجلات", "Clear all records"), color = MaterialTheme.colorScheme.error)
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+            Text("Regula • 1.0.1", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally))
+            Spacer(Modifier.height(20.dp))
+        }
     }
 
-    // Clear dialog
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text(if (isAr) "مسح جميع السجلات؟" else "Clear All Records?", fontWeight = FontWeight.Bold) },
-            text = { Text(if (isAr) "سيتم مسح جميع السجلات بشكل دائم. هل تريد المتابعة؟" else "All records will be permanently erased. Proceed?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onClearAllData()
-                        showClearDialog = false
-                        Toast.makeText(context, if (isAr) "تم مسح جميع السجلات بنجاح" else "All data cleared", Toast.LENGTH_SHORT).show()
-                    }
-                ) {
-                    Text(if (isAr) "مسح الكل" else "Clear All", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) {
-                    Text(if (isAr) "إلغاء" else "Cancel")
-                }
-            }
+            title = { Text(t("مسح جميع السجلات؟", "Clear all records?")) },
+            text = { Text(t("سيُحذف سجل الإخراج والأدوية والوجبات نهائيًا من هذا الجهاز. لا يمكن التراجع عن ذلك. صدّر نسخة أولًا إذا كنت تريد الاحتفاظ بها.", "All bowel, medication and meal records will be permanently deleted from this device. This cannot be undone. Export a backup first if you want to keep them.")) },
+            confirmButton = { TextButton(onClick = { onClearAllData(); showClearDialog = false }) { Text(t("مسح الكل", "Clear all"), color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { showClearDialog = false }) { Text(t("إلغاء", "Cancel")) } }
         )
     }
-
-    // Reseed dialog
-    if (showReseedDialog) {
+    if (showDemoDialog) {
         AlertDialog(
-            onDismissRequest = { showReseedDialog = false },
-            title = { Text(if (isAr) "إعادة تحميل البيانات التجريبية؟" else "Reload Sample Data?", fontWeight = FontWeight.Bold) },
-            text = { Text(if (isAr) "سيتم استبدال السجلات الحالية بنماذج تجريبية لبيان التقارير والسجل." else "Current records will be reloaded with clinical sample entries.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onReseedDemoData()
-                        showReseedDialog = false
-                        Toast.makeText(context, if (isAr) "تمت إعادة تعيين البيانات التجريبية" else "Sample data loaded", Toast.LENGTH_SHORT).show()
-                    }
-                ) {
-                    Text(if (isAr) "إعادة التعيين" else "Reload", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showReseedDialog = false }) {
-                    Text(if (isAr) "إلغاء" else "Cancel")
-                }
-            }
+            onDismissRequest = { showDemoDialog = false },
+            title = { Text(t("إضافة بيانات تجريبية؟", "Add sample data?")) },
+            text = { Text(t("ستُضاف سجلات افتراضية لتجربة التطبيق فقط. ليست بياناتك الطبية، ولن تُضاف إذا كانت لديك سجلات حالية.", "Fictitious records will be added for demonstration only. They are not your medical history and will not be added if any records already exist.")) },
+            confirmButton = { TextButton(onClick = { onReseedDemoData(); showDemoDialog = false }) { Text(t("إضافة", "Add")) } },
+            dismissButton = { TextButton(onClick = { showDemoDialog = false }) { Text(t("إلغاء", "Cancel")) } }
         )
     }
 }
 
 @Composable
-private fun ThemeOptionRow(
-    title: String,
-    description: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
-        border = androidx.compose.foundation.BorderStroke(
-            width = if (isSelected) 1.5.dp else 0.5.dp,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.5.sp,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = description,
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-            RadioButton(
-                selected = isSelected,
-                onClick = onClick
-            )
-        }
+private fun SettingsCard(title: String, content: @Composable Column.() -> Unit) {
+    Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
+        Column(Modifier.padding(18.dp), content = {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(14.dp))
+            content()
+        })
     }
 }
+
+private fun currentColor(palette: AppColorPalette) = palette.previewColors.first()
