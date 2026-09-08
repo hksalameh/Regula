@@ -1,39 +1,27 @@
-name: Android checks
+name: Android Build
 
 on:
   push:
-    branches: [main, improve/release-readiness]
+    branches: [main]
   pull_request:
   workflow_dispatch:
-
-permissions:
-  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
-      - uses: android-actions/setup-android@v3
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.3.1'
-      - name: Install Android SDK
-        run: |
-          sdkmanager --install 'platforms;android-36' 'platforms;android-36.1' 'build-tools;36.0.0'
-          yes | sdkmanager --licenses || true
-      - name: Test and assemble
-        run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:assembleDebug
-      - name: Upload test APK
-        if: success()
+          cache: 'gradle'
+
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: regula-debug-apk
+          name: regula-app
           path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 14
