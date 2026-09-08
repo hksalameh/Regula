@@ -10,11 +10,11 @@ enum class AppColorPalette(
     val previewColors: List<Color>
 ) {
     NATURAL_TONES(
-        titleAr = "تناغم طبيعي هادئ (Natural Tones)",
-        titleEn = "Natural Tones (Organic Sage & Ivory)",
-        subtitleAr = "عاجي دافئ #FAF9F6 + زيتوني ترابي #3A4A2D + سيج مريح #E1E9D6",
-        subtitleEn = "Warm ivory canvas + earthen olive + soft soothing sage",
-        previewColors = listOf(Color(0xFF3A4A2D), Color(0xFFE1E9D6), Color(0xFFF1F1E8), Color(0xFFFAF9F6))
+        titleAr = "أخضر بترولي هادئ",
+        titleEn = "Calm Petrol Green",
+        subtitleAr = "خلفية فاتحة دافئة مع أخضر هادئ وتباين مريح",
+        subtitleEn = "Warm light canvas with calm green and gentle contrast",
+        previewColors = listOf(Color(0xFF294F46), Color(0xFFDFEBE5), Color(0xFFF1F5F2), Color(0xFFF7F8F5))
     ),
     ROYAL_NAVY(
         titleAr = "تدرج كحلي مخملي فاخر (Indigo Velvet)",
@@ -46,26 +46,24 @@ enum class AppColorPalette(
     )
 }
 
-// 0. Natural Tones (Requested Design)
-val NaturalBackground = Color(0xFFFAF9F6)
-val NaturalOnBackground = Color(0xFF1C1C17)
-val NaturalHeader = Color(0xFF43493E)
-val NaturalPrimary = Color(0xFF3A4A2D)
+val NaturalBackground = Color(0xFFF7F8F5)
+val NaturalOnBackground = Color(0xFF253B36)
+val NaturalHeader = Color(0xFF253B36)
+val NaturalPrimary = Color(0xFF294F46)
 val NaturalOnPrimary = Color(0xFFFFFFFF)
-val NaturalPrimaryContainer = Color(0xFFE1E9D6)
-val NaturalOnPrimaryContainer = Color(0xFF1C1C17)
-val NaturalSecondary = Color(0xFF43493E)
+val NaturalPrimaryContainer = Color(0xFFDFEBE5)
+val NaturalOnPrimaryContainer = Color(0xFF203A34)
+val NaturalSecondary = Color(0xFF5D756E)
 val NaturalOnSecondary = Color(0xFFFFFFFF)
-val NaturalSecondaryContainer = Color(0xFFE3E4D7)
-val NaturalOnSecondaryContainer = Color(0xFF3A4A2D)
+val NaturalSecondaryContainer = Color(0xFFE9EFEC)
+val NaturalOnSecondaryContainer = Color(0xFF36524B)
 val NaturalSurface = Color(0xFFFFFFFF)
-val NaturalOnSurface = Color(0xFF1C1C17)
-val NaturalSurfaceVariant = Color(0xFFF1F1E8)
-val NaturalOnSurfaceVariant = Color(0xFF43493E)
-val NaturalOutline = Color(0xFFE3E4D7)
-val NaturalBadge = Color(0xFFD1DBC1)
+val NaturalOnSurface = Color(0xFF253B36)
+val NaturalSurfaceVariant = Color(0xFFF1F5F2)
+val NaturalOnSurfaceVariant = Color(0xFF64756F)
+val NaturalOutline = Color(0xFFDDE5DF)
+val NaturalBadge = Color(0xFFD2E3DA)
 
-// 1. Royal Navy (Deep Indigo Velvet - scientifically calibrated for maximum harmony and zero glare)
 val RoyalPrimary = Color(0xFF0F2B5C)
 val RoyalOnPrimary = Color(0xFFFFFFFF)
 val RoyalPrimaryContainer = Color(0xFF1E4287)
@@ -76,7 +74,6 @@ val RoyalSecondaryContainer = Color(0xFFE0F2FE)
 val RoyalOnSecondaryContainer = Color(0xFF0369A1)
 val RoyalDarkAccent = Color(0xFF091B3A)
 
-// 2. Oceanic Teal (Deep Oceanic Blue & Clinical Porcelain)
 val OceanPrimary = Color(0xFF0C3E5E)
 val OceanOnPrimary = Color(0xFFFFFFFF)
 val OceanPrimaryContainer = Color(0xFF14537D)
@@ -86,7 +83,6 @@ val OceanOnSecondary = Color(0xFFFFFFFF)
 val OceanSecondaryContainer = Color(0xFFCCFBF1)
 val OceanOnSecondaryContainer = Color(0xFF115E59)
 
-// 3. Sapphire Gold (Deep Midnight Sapphire)
 val SapphirePrimary = Color(0xFF132247)
 val SapphireOnPrimary = Color(0xFFFFFFFF)
 val SapphirePrimaryContainer = Color(0xFF1D356D)
@@ -96,7 +92,6 @@ val SapphireOnSecondary = Color(0xFFFFFFFF)
 val SapphireSecondaryContainer = Color(0xFFFEF3C7)
 val SapphireOnSecondaryContainer = Color(0xFF92400E)
 
-// 4. Classic Indigo (Modern Deep Blue Theme)
 val IndigoPrimary = Color(0xFF0B192C)
 val IndigoOnPrimary = Color(0xFFFFFFFF)
 val IndigoPrimaryContainer = Color(0xFF1E3E62)
@@ -106,7 +101,6 @@ val IndigoOnSecondary = Color(0xFF0B192C)
 val IndigoSecondaryContainer = Color(0xFFE0F2FE)
 val IndigoOnSecondaryContainer = Color(0xFF0369A1)
 
-// Pure and Minimal Surfaces with tinted comfort canvas (Soft Porcelain & Snow Mist)
 val PureWhiteSurface = Color(0xFFFFFFFF)
 val SoftPorcelainSurface = Color(0xFFF8FAFC)
 val LightCleanBackground = Color(0xFFF1F5F9)
@@ -114,12 +108,10 @@ val LightSubtleBorder = Color(0xFFCBD5E1)
 val DeepDarkText = Color(0xFF0F172A)
 val MutedSlateText = Color(0xFF475569)
 
-// Dark Theme Variants
 val DarkBackground = Color(0xFF0A1120)
 val DarkSurface = Color(0xFF0F1B2E)
 val DarkSurfaceVariant = Color(0xFF1A2B47)
 
-// Bristol Scale & Medical Status Colors
 val BristolConstipationSevere = Color(0xFFB45309)
 val BristolConstipationMild = Color(0xFFC26D38)
 val BristolNormalSlightConstip = Color(0xFF64748B)
