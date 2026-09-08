@@ -1,8 +1,8 @@
 package com.example.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,23 +16,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.Medication
-import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Spa
 import androidx.compose.material.icons.filled.Wc
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -44,15 +41,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.BowelEntry
@@ -60,9 +60,11 @@ import com.example.data.model.MealEntry
 import com.example.data.model.MedicationEntry
 import com.example.data.model.TimelineItem
 import com.example.ui.SheetType
+import com.example.util.DateRanges
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 @Composable
 fun TodayHomeScreen(
@@ -78,595 +80,193 @@ fun TodayHomeScreen(
     onNavigateToReport: () -> Unit,
     onNavigateToTimeline: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToPalettePreview: (() -> Unit)? = null
+    onNavigateToPalettePreview: (() -> Unit)? = null,
+    isAr: Boolean = true
 ) {
     val context = LocalContext.current
-    val scrollState = rememberScrollState()
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            now = System.currentTimeMillis()
+            delay(60_000)
+        }
+    }
+    val locale = remember(isAr) { if (isAr) Locale("ar") else Locale.ENGLISH }
+    val dateFormat = remember(locale) { SimpleDateFormat("EEEE، d MMMM", locale) }
+    val timeFormat = remember(locale) { SimpleDateFormat("hh:mm a", locale) }
+    val fullDateFormat = remember(locale) { SimpleDateFormat("d MMMM، hh:mm a", locale) }
+    val start = DateRanges.startOfToday()
+    val end = DateRanges.startOfNextDay()
+    val todayBowels = bowels.filter { it.timestamp in start until end }
+    val todayWater = meals.filter { it.timestamp in start until end }.sumOf { it.waterMl }
+    val todayTimeline = timeline.filter { it.timestamp in start until end }.take(3)
+    val safeGoal = waterGoalMl.coerceAtLeast(250)
+    val waterProgress = (todayWater.toFloat() / safeGoal).coerceIn(0f, 1f)
+    val hoursSinceLast = lastSuccessfulBowel?.let { ((now - it.timestamp) / 3_600_000L).coerceAtLeast(0) }
+    val t: (String, String) -> String = { ar, en -> if (isAr) ar else en }
+    val elapsedText = when {
+        hoursSinceLast == null -> t("لا يوجد تسجيل بعد", "No entry yet")
+        hoursSinceLast < 1 -> t("منذ أقل من ساعة", "Less than an hour ago")
+        hoursSinceLast < 24 -> t("منذ $hoursSinceLast ساعة", "$hoursSinceLast hours ago")
+        else -> t("منذ ${hoursSinceLast / 24} يوم و${hoursSinceLast % 24} ساعة", "${hoursSinceLast / 24} days, ${hoursSinceLast % 24} hours ago")
+    }
 
-    // Time calculations
-    val now = System.currentTimeMillis()
-    val hoursSinceLastBowel = if (lastSuccessfulBowel != null) {
-        ((now - lastSuccessfulBowel.timestamp) / (1000 * 60 * 60)).toInt()
-    } else null
-
-    // Today's entries
-    val startOfDay = now - (now % (24 * 60 * 60 * 1000L))
-    val todayBowels = bowels.filter { it.timestamp >= startOfDay }
-    val todayMeds = medications.filter { it.timestamp >= startOfDay }
-    val todayMeals = meals.filter { it.timestamp >= startOfDay }
-    val todayWater = todayMeals.sumOf { it.waterMl }
-    val waterProgress = (todayWater.toFloat() / waterGoalMl.toFloat()).coerceIn(0f, 1f)
-
-    val todayTimeline = timeline.filter { it.timestamp >= startOfDay }.take(4)
-
-    val dateFormat = SimpleDateFormat("EEEE، d MMMM", Locale("ar"))
-    val timeFormat = SimpleDateFormat("hh:mm a", Locale("ar"))
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(scrollState)
-            .padding(horizontal = 18.dp, vertical = 14.dp)
-    ) {
-        // --- 1. HEADER (Natural Tones Design) ---
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column {
-                Text(
-                    text = "مرحباً بك",
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    letterSpacing = 1.sp
-                )
-                Text(
-                    text = appName,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    letterSpacing = (-0.5).sp
-                )
-            }
+            Column(modifier = Modifier.fillMaxWidth().widthInMax600()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(t("متابعتك اليومية", "Your daily tracker"), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(appName, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    }
+                    IconButton(onClick = onNavigateToSettings, modifier = Modifier.testTag("home_settings_button")) {
+                        Icon(Icons.Default.Settings, contentDescription = t("الإعدادات", "Settings"), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(dateFormat.format(Date(now)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(20.dp))
 
-            // Action Buttons: Medical Report & Settings Avatar
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Surface(
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(Modifier.padding(22.dp)) {
+                        Text(t("آخر عملية إخراج", "Last bowel movement"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Spacer(Modifier.height(8.dp))
+                        Text(elapsedText, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            lastSuccessfulBowel?.let { fullDateFormat.format(Date(it.timestamp)) } ?: t("ابدأ بتسجيل أول عملية لتظهر هنا.", "Your first entry will appear here."),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        if (lastSuccessfulBowel != null) {
+                            Spacer(Modifier.height(14.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f))
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                t("بريستول ${lastSuccessfulBowel.bristolType} • الإجهاد: ${lastSuccessfulBowel.strainingLevel}", "Bristol ${lastSuccessfulBowel.bristolType} • Straining: ${lastSuccessfulBowel.strainingLevel}"),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Button(
+                    onClick = { onOpenSheet(SheetType.AddBowel) },
+                    modifier = Modifier.fillMaxWidth().height(56.dp).testTag("quick_action_bowel"),
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier
-                        .clickable { onNavigateToReport() }
-                        .testTag("top_report_btn")
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Description,
-                            contentDescription = "تقرير الطبيب",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(17.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "تقرير الطبيب",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.5.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(10.dp))
+                    Text(t("تسجيل عملية إخراج", "Record bowel movement"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 }
+                Spacer(Modifier.height(22.dp))
+                Text(t("تسجيل سريع", "Quick tracking"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(12.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    QuickAction(t("ماء", "Water"), Icons.Default.LocalDrink, Modifier.weight(1f).testTag("quick_action_water")) {
+                        onQuickWater(250)
+                        Toast.makeText(context, t("تمت إضافة 250 مل", "Added 250 ml"), Toast.LENGTH_SHORT).show()
+                    }
+                    QuickAction(t("دواء", "Medicine"), Icons.Default.Medication, Modifier.weight(1f).testTag("quick_action_medication")) { onOpenSheet(SheetType.AddMedication) }
+                    QuickAction(t("وجبة", "Meal"), Icons.Default.Restaurant, Modifier.weight(1f).testTag("quick_action_meal")) { onOpenSheet(SheetType.AddMeal) }
+                }
+                Spacer(Modifier.height(22.dp))
 
-                if (onNavigateToPalettePreview != null) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.size(42.dp)
-                    ) {
-                        IconButton(
-                            onClick = onNavigateToPalettePreview,
-                            modifier = Modifier.testTag("home_palette_preview_button")
-                        ) {
-                            Icon(
-                                Icons.Default.Palette,
-                                contentDescription = "معاينة الألوان",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(Modifier.padding(18.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(t("الماء والسوائل اليوم", "Today's fluids"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                            Text("$todayWater / $safeGoal ${t("مل", "ml")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                    }
-                }
-
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.size(42.dp)
-                ) {
-                    IconButton(
-                        onClick = onNavigateToSettings,
-                        modifier = Modifier.testTag("home_settings_button")
-                    ) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = "الإعدادات",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
+                        Spacer(Modifier.height(12.dp))
+                        LinearProgressIndicator(
+                            progress = { waterProgress }, modifier = Modifier.fillMaxWidth().height(7.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
                         )
+                        Spacer(Modifier.height(10.dp))
+                        Text(t("الهدف قابل للتعديل من الإعدادات. سجّل ما تشربه فعليًا.", "Set your own goal in Settings. Record what you actually drink."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(18.dp))
-
-        // --- 2. HERO STATUS CARD (Natural Tones Sage Container: rounded-[2rem] p-6) ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                // Top row with calendar icon in rounded-xl container + status pill
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.65f),
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarToday,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(9.dp)
-                        )
-                    }
-
-                    val (pillText, pillBg, pillColor) = when {
-                        hoursSinceLastBowel == null -> Triple("جاهز للتسجيل", Color.White.copy(alpha = 0.75f), MaterialTheme.colorScheme.onSurfaceVariant)
-                        hoursSinceLastBowel <= 24 -> Triple("🟢 إيقاع طبيعي منتظم", Color.White.copy(alpha = 0.85f), Color(0xFF2E7D32))
-                        hoursSinceLastBowel <= 48 -> Triple("🟡 مضى $hoursSinceLastBowel ساعة", Color.White.copy(alpha = 0.85f), Color(0xFFD97706))
-                        else -> Triple("🟠 مضى $hoursSinceLastBowel ساعة", Color.White.copy(alpha = 0.85f), Color(0xFFDC2626))
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = pillBg
-                    ) {
-                        Text(
-                            text = pillText,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.5.sp,
-                            color = pillColor,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp)
-                        )
+                Spacer(Modifier.height(22.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(t("النشاط الأخير", "Recent activity"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = onNavigateToTimeline, modifier = Modifier.testTag("view_all_timeline_btn")) {
+                        Text(t("عرض الكل", "View all"))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                 }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Hero Headline
-                Text(
-                    text = "آخر عملية إخراج",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                val mainHeadline = when {
-                    hoursSinceLastBowel == null -> "لم يسجل بعد"
-                    hoursSinceLastBowel == 0 -> "منذ أقل من ساعة"
-                    else -> "منذ $hoursSinceLastBowel ساعة"
-                }
-                Text(
-                    text = mainHeadline,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-
-                if (lastSuccessfulBowel != null) {
-                    Text(
-                        text = "مقياس بريستول: نوع ${lastSuccessfulBowel.bristolType} • الإجهاد: ${lastSuccessfulBowel.strainingLevel}",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Key Metrics Summary
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    DailyMetricItem(
-                        icon = Icons.Default.Wc,
-                        label = "حركة الأمعاء",
-                        value = if (todayBowels.isEmpty()) "0" else "${todayBowels.size}",
-                        unit = "مرات",
-                        modifier = Modifier.weight(1f)
-                    )
-                    DailyMetricItem(
-                        icon = Icons.Default.Medication,
-                        label = "أدوية وملينات",
-                        value = if (todayMeds.isEmpty()) "0" else "${todayMeds.size}",
-                        unit = "جرعة",
-                        modifier = Modifier.weight(1f)
-                    )
-                    DailyMetricItem(
-                        icon = Icons.Default.LocalDrink,
-                        label = "الماء والسوائل",
-                        value = "$todayWater",
-                        unit = "مل",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Hydration progress bar
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "هدف السوائل ($waterGoalMl مل)",
-                        fontSize = 11.5.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${(waterProgress * 100).toInt()}%",
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                LinearProgressIndicator(
-                    progress = { waterProgress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = Color.White.copy(alpha = 0.5f),
-                    strokeCap = StrokeCap.Round
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // --- 3. QUICK ACTION BUTTONS (Natural Tones Grid: rounded-3xl bg-[#F1F1E8]) ---
-        Text(
-            text = "تسجيل سريع",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            NaturalQuickButton(
-                title = "دخول الحمام",
-                icon = Icons.Default.Wc,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("quick_action_bowel"),
-                onClick = { onOpenSheet(SheetType.AddBowel) }
-            )
-            NaturalQuickButton(
-                title = "أدوية وملينات",
-                icon = Icons.Default.Medication,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("quick_action_medication"),
-                onClick = { onOpenSheet(SheetType.AddMedication) }
-            )
-            NaturalQuickButton(
-                title = "وجبات طعام",
-                icon = Icons.Default.Restaurant,
-                modifier = Modifier
-                    .weight(1f)
-                    .testTag("quick_action_meal"),
-                onClick = { onOpenSheet(SheetType.AddMeal) }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Quick Water Bar Button
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    onQuickWater(250)
-                    Toast.makeText(context, "تمت إضافة كوب ماء (250 مل) 💧", Toast.LENGTH_SHORT).show()
-                }
-                .testTag("quick_action_water")
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocalDrink,
-                            contentDescription = null,
-                            tint = Color(0xFF0284C7),
-                            modifier = Modifier.padding(6.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "شرب ماء سريع (+250 مل)",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "انقر لإضافة كوب ماء فوراً",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "إضافة",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(6.dp).size(16.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(22.dp))
-
-        // --- 4. RECENT ACTIVITY CARD (Natural Tones: rounded-[2rem] bg-white border) ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                // Header with title & date
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "النشاط الأخير",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = dateFormat.format(Date()),
-                        fontSize = 11.5.sp,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
+                Spacer(Modifier.height(4.dp))
                 if (todayTimeline.isEmpty()) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier.size(38.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Spa,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(9.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "بداية يوم نقية",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.5.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = "لم تسجل أي أحداث اليوم بعد.",
-                                fontSize = 11.5.sp,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                        }
+                    Surface(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                        Text(t("لا توجد تسجيلات اليوم. يمكنك البدء في أي وقت.", "No entries today. You can start whenever you're ready."), modifier = Modifier.padding(20.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        todayTimeline.forEach { item ->
-                            val (dotColor, titleText) = when (item) {
-                                is TimelineItem.Bowel -> Pair(
-                                    Color(0xFF3A4A2D),
-                                    if (item.entry.isSuccess) "إخراج أمعاء ناجح (نوع ${item.entry.bristolType})" else "محاولة إخراج"
-                                )
-                                is TimelineItem.Medication -> Pair(
-                                    Color(0xFFFB923C),
-                                    "أخذت ${item.entry.name} (${item.entry.dosage})"
-                                )
-                                is TimelineItem.Meal -> Pair(
-                                    Color(0xFF22C55E),
-                                    "${item.entry.mealType}: ${item.entry.foodsDescription.ifEmpty { "وجبة غنية بالألياف" }}"
-                                )
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(9.dp)
-                                        .background(dotColor, CircleShape)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = titleText,
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 13.5.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = timeFormat.format(Date(item.timestamp)),
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.outline
-                                    )
+                    Surface(color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(horizontal = 18.dp, vertical = 6.dp)) {
+                            todayTimeline.forEachIndexed { index, item ->
+                                val (icon, title) = when (item) {
+                                    is TimelineItem.Bowel -> Icons.Default.Wc to if (item.entry.isSuccess) t("عملية إخراج", "Bowel movement") else t("محاولة دون إخراج", "Attempt without stool")
+                                    is TimelineItem.Medication -> Icons.Default.Medication to item.entry.name
+                                    is TimelineItem.Meal -> Icons.Default.Restaurant to item.entry.mealType
                                 }
+                                Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(timeFormat.format(Date(item.timestamp)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                if (index < todayTimeline.lastIndex) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    TextButton(
-                        onClick = onNavigateToTimeline,
-                        modifier = Modifier.align(Alignment.End).testTag("view_all_timeline_btn")
-                    ) {
-                        Text(
-                            text = "عرض السجل كاملاً",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = null,
-                            modifier = Modifier.size(13.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
                 }
+                Spacer(Modifier.height(16.dp))
+                TextButton(onClick = onNavigateToReport, modifier = Modifier.align(Alignment.CenterHorizontally).testTag("top_report_btn")) {
+                    Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(t("عرض تقرير الطبيب", "View doctor report"))
+                }
+                Spacer(Modifier.height(12.dp))
             }
         }
-
-        Spacer(modifier = Modifier.height(28.dp))
     }
 }
 
+private fun Modifier.widthInMax600(): Modifier = this.then(Modifier.widthIn(max = 600.dp))
+
 @Composable
-fun NaturalQuickButton(
-    title: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
+private fun QuickAction(title: String, icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-        modifier = modifier
-            .height(100.dp)
-            .clickable { onClick() }
+        modifier = modifier.height(92.dp).clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Column(
-            modifier = Modifier.padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = Color.White,
-                shadowElevation = 1.dp,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(9.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+        Column(Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.height(9.dp))
+            Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
         }
-    }
-}
-
-@Composable
-fun DailyMetricItem(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    unit: String,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = value,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            Spacer(modifier = Modifier.width(2.dp))
-            Text(
-                text = unit,
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
