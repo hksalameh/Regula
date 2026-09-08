@@ -1,16 +1,16 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.devtools.ksp)
 }
 
 android {
-    namespace = "com.example" // هذا هو الاسم الصحيح حسب مجلداتك
+    namespace = "com.hsalameh.regula"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example"
+        applicationId = "com.hsalameh.regula"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
