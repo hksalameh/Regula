@@ -3,7 +3,7 @@ name: Source Snapshot
 on:
   workflow_dispatch:
   push:
-    branches: [ improve/ui-release-readiness ]
+    branches: [ improve/corpscale-clarity ]
     paths:
       - '.github/workflows/source-snapshot.yml'
 
