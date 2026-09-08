@@ -1,0 +1,6 @@
+{
+  "name": "ريغولا",
+  "description": "تطبيق ريغولا (Regula) لمتابعة حركة الأمعاء والتخلص من الإمساك، ومشاركة تقرير سريري دقيق مع الطبيب.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
