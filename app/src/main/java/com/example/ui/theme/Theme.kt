@@ -7,13 +7,20 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+private data class PaletteRoles(
+    val primary: Color, val onPrimary: Color,
+    val container: Color, val onContainer: Color,
+    val secondary: Color, val onSecondary: Color,
+    val secondaryContainer: Color, val onSecondaryContainer: Color
+)
+
 fun getLightColorScheme(palette: AppColorPalette): ColorScheme {
     val (primary, onPrimary, container, onContainer, secondary, onSecondary, secondaryContainer, onSecondaryContainer) = when (palette) {
-        AppColorPalette.NATURAL_TONES -> listOf(NaturalPrimary, NaturalOnPrimary, NaturalPrimaryContainer, NaturalOnPrimaryContainer, NaturalSecondary, NaturalOnSecondary, NaturalSecondaryContainer, NaturalOnSecondaryContainer)
-        AppColorPalette.ROYAL_NAVY -> listOf(RoyalPrimary, RoyalOnPrimary, RoyalPrimaryContainer, RoyalOnPrimaryContainer, RoyalSecondary, RoyalOnSecondary, RoyalSecondaryContainer, RoyalOnSecondaryContainer)
-        AppColorPalette.OCEANIC_TEAL -> listOf(OceanPrimary, OceanOnPrimary, OceanPrimaryContainer, OceanOnPrimaryContainer, OceanSecondary, OceanOnSecondary, OceanSecondaryContainer, OceanOnSecondaryContainer)
-        AppColorPalette.SAPPHIRE_GOLD -> listOf(SapphirePrimary, SapphireOnPrimary, SapphirePrimaryContainer, SapphireOnPrimaryContainer, SapphireSecondary, SapphireOnSecondary, SapphireSecondaryContainer, SapphireOnSecondaryContainer)
-        AppColorPalette.CLASSIC_INDIGO -> listOf(IndigoPrimary, IndigoOnPrimary, IndigoPrimaryContainer, IndigoOnPrimaryContainer, IndigoSecondary, IndigoOnSecondary, IndigoSecondaryContainer, IndigoOnSecondaryContainer)
+        AppColorPalette.NATURAL_TONES -> PaletteRoles(NaturalPrimary, NaturalOnPrimary, NaturalPrimaryContainer, NaturalOnPrimaryContainer, NaturalSecondary, NaturalOnSecondary, NaturalSecondaryContainer, NaturalOnSecondaryContainer)
+        AppColorPalette.ROYAL_NAVY -> PaletteRoles(RoyalPrimary, RoyalOnPrimary, RoyalPrimaryContainer, RoyalOnPrimaryContainer, RoyalSecondary, RoyalOnSecondary, RoyalSecondaryContainer, RoyalOnSecondaryContainer)
+        AppColorPalette.OCEANIC_TEAL -> PaletteRoles(OceanPrimary, OceanOnPrimary, OceanPrimaryContainer, OceanOnPrimaryContainer, OceanSecondary, OceanOnSecondary, OceanSecondaryContainer, OceanOnSecondaryContainer)
+        AppColorPalette.SAPPHIRE_GOLD -> PaletteRoles(SapphirePrimary, SapphireOnPrimary, SapphirePrimaryContainer, SapphireOnPrimaryContainer, SapphireSecondary, SapphireOnSecondary, SapphireSecondaryContainer, SapphireOnSecondaryContainer)
+        AppColorPalette.CLASSIC_INDIGO -> PaletteRoles(IndigoPrimary, IndigoOnPrimary, IndigoPrimaryContainer, IndigoOnPrimaryContainer, IndigoSecondary, IndigoOnSecondary, IndigoSecondaryContainer, IndigoOnSecondaryContainer)
     }
     return lightColorScheme(
         primary = primary, onPrimary = onPrimary,
